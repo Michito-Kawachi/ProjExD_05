@@ -9,9 +9,50 @@ WIDTH = 800
 HEIGHT = 500
 
 
-class Enemy(pg.sprite.Sprite):
+def gen_flower(pre_x, pre_y):
     """
-    敵の攻撃に関するクラス
+    拡散弾幕を生成する関数
+    引数1 pre_x: 中心x座標
+    引数2 pre_x: 中心y座標
+    変数1 pos_x: 発射するx座標
+    変数2 pos_y: 発射するy座標
+    戻り値 flos: 
+    """
+    num = 8
+    flos = []
+    for theta in range(0, 360, int(360/num)):
+        if theta == 0:
+            pos_x = pre_x + 10
+            pos_y = pre_y
+        elif 0 < theta < 90:
+            pos_x = pre_x + 10
+            pos_y = pre_y - 10
+        elif theta == 90:
+            pos_x = pre_x
+            pos_y = pre_y - 10
+        elif 90 < theta < 180:
+            pos_x = pre_x - 10
+            pos_y = pre_y - 10
+        elif theta == 180:
+            pos_x = pre_x - 10
+            pos_y = pre_y
+        elif 180 < theta < 270:
+            pos_x = pre_x - 10
+            pos_y = pre_y + 10
+        elif theta == 270:
+            pos_x = pre_x
+            pos_y = pre_y + 10
+        elif 270 < theta < 360:
+            pos_x = pre_x + 10
+            pos_y = pre_y + 10
+
+        flos.append(Bullet(pre_x, pre_y, pos_x, pos_y))
+    return flos
+
+
+class Bullet(pg.sprite.Sprite):
+    """
+    弾に関するクラス
     """
     def __init__(self, pre_x, pre_y, pos_x, pos_y):
         """
@@ -56,7 +97,6 @@ class Enemy(pg.sprite.Sprite):
         """
         x_diff, y_diff = pre_x-org.centerx, pre_y-org.centery
         norm = math.sqrt(x_diff**2+y_diff**2)
-        print(f"x:{-x_diff/norm}, y:{-y_diff/norm}")
         return -x_diff/norm, -y_diff/norm
     
     def update(self):
@@ -79,7 +119,12 @@ def main():
     
 
     flowers = pg.sprite.Group()
+    delay_time = 15
+    line_flag = False
+    lin_cnt = 0
+    lin_num = 10
     tmr = 0
+    
     clock = pg.time.Clock()
 
     while True:
@@ -89,46 +134,31 @@ def main():
             if event.type == pg.QUIT:
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                """
-                変数1 pre_x: 中心x座標
-                変数2 pre_x: 中心y座標
-                変数3 pos_x: 発射するx座標
-                変数4 pos_y: 発射するy座標
-                """
+                # 拡散弾幕（ランダム）
                 pre_x = random.randint(50, WIDTH-50)
-                pre_y = 100
-                num = 8
-                flos = []
-                for theta in range(0, 360, int(360/num)):
-                    print(theta)
-                    if theta == 0:
-                        pos_x = pre_x + 10
-                        pos_y = pre_y
-                    elif 0 < theta < 90:
-                        pos_x = pre_x + 10
-                        pos_y = pre_y - 10
-                    elif theta == 90:
-                        pos_x = pre_x
-                        pos_y = pre_y - 10
-                    elif 90 < theta < 180:
-                        pos_x = pre_x - 10
-                        pos_y = pre_y - 10
-                    elif theta == 180:
-                        pos_x = pre_x - 10
-                        pos_y = pre_y
-                    elif 180 < theta < 270:
-                        pos_x = pre_x - 10
-                        pos_y = pre_y + 10
-                    elif theta == 270:
-                        pos_x = pre_x
-                        pos_y = pre_y + 10
-                    elif 270 < theta < 360:
-                        pos_x = pre_x + 10
-                        pos_y = pre_y + 10
-
-                    flos.append(Enemy(pre_x, pre_y, pos_x, pos_y))
+                pre_y = random.randint(100, 300)
+                flos = gen_flower(pre_x, pre_y)
                 for flo in flos:
                     flowers.add(flo)
+
+            elif event.type == pg.KEYDOWN and event.key == pg.K_LSHIFT:
+                # 拡散弾幕（直線）
+                pre_x = 50
+                line_y = [100, 200, 250, 300]
+                pre_y = random.choice(line_y)
+                line_flag = True
+                start_time = tmr
+                
+        if line_flag and tmr == start_time + delay_time * lin_cnt and lin_cnt <= lin_num:
+            flos = gen_flower(pre_x, pre_y)
+            for flo in flos:
+                flowers.add(flo)
+            pre_x += 40
+            lin_cnt += 1
+        elif lin_cnt >= lin_num:
+            lin_cnt = 0
+            line_flag = False
+
                     
         tmr += 1
         

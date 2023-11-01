@@ -13,52 +13,24 @@ class Enemy(pg.sprite.Sprite):
     """
     敵の攻撃に関するクラス
     """
-    def __init__(self, type: str):
+    def __init__(self, pre_x, pre_y, pos_x, pos_y):
         """
-        どの弾幕を生成するか判定する関数
-        引数1 type: 弾幕の種類（文字列）
+        弾を指定の場所から発射する関数
+        引数1 pre_x: 中心x座標
+        引数2 pre_y: 中心y座標
+        引数3 pos_x: 発射するx座標
+        引数4 pos_y: 発射するy座標
         """
         super().__init__()
-        self.lst = []
-        if type == "flower":
-            """
-            変数1 pre_x: 中心x座標
-            変数2 pre_x: 中心y座標
-            変数3 pos_x: 発射するx座標
-            変数4 pos_y: 発射するy座標
-            """
-            self.pre_x = random.randint(50, WIDTH-50)
-            self.pre_y = 100
-            self.num = 8
-            for theta in range(0, 360, int(360/self.num)):
-                if theta == 0:
-                    self.pos_x = self.pre_x + 10
-                    self.pos_y = self.pre_y
-                elif 0 < theta < 90:
-                    self.pos_x = self.pre_x + 10
-                    self.pos_y = self.pre_y - 10
-                elif theta == 90:
-                    self.pos_x = self.pre_x
-                    self.pos_y = self.pre_y - 10
-                elif 90 < theta < 180:
-                    self.pos_x = self.pre_x - 10
-                    self.pos_y = self.pre_y - 10
-                elif theta == 180:
-                    self.pos_x = self.pre_x - 10
-                    self.pos_y = self.pre_y
-                elif 180 < theta < 270:
-                    self.pos_x = self.pre_x - 10
-                    self.pos_y = self.pre_y + 10
-                elif theta == 270:
-                    self.pos_x = self.pre_x
-                    self.pos_y = self.pre_y + 10
-                elif 270 < theta < 360:
-                    self.pos_x = self.pre_x + 10
-                    self.pos_y = self.pre_y + 10
-                print(f"pos_x = {self.pos_x}, pos_y = {self.pos_y}")
-                print(f"pre_x = {self.pre_x}, pre_y = {self.pre_y}")
-                print("------")
-                self.lst.append(__class__.gen_bul(self))
+        rad = 5
+        self.image = pg.Surface((2*rad, 2*rad))
+        pg.draw.circle(self.image, (255, 255, 255), (rad, rad), rad)
+        self.image.set_colorkey((0, 0, 0))
+        self.rect = self.image.get_rect()
+        self.rect.centerx = pos_x
+        self.rect.centery = pos_y
+        self.speed = 2
+        self.vx, self.vy = __class__.calc_orientation(self.rect, pre_x, pre_y)
 
     def check_out(obj: pg.Rect):
         """
@@ -84,23 +56,8 @@ class Enemy(pg.sprite.Sprite):
         """
         x_diff, y_diff = pre_x-org.centerx, pre_y-org.centery
         norm = math.sqrt(x_diff**2+y_diff**2)
+        print(f"x:{-x_diff/norm}, y:{-y_diff/norm}")
         return -x_diff/norm, -y_diff/norm
-
-    def gen_bul(self):
-        """
-        弾を指定の場所から発射する関数
-        """
-        rad = 5
-        self.image = pg.Surface((2*rad, 2*rad))
-        pg.draw.circle(self.image, (255, 255, 255), (rad, rad), rad)
-        self.image.set_colorkey((0, 0, 0))
-        self.rect = self.image.get_rect()
-        self.rect.centerx = self.pos_x
-        self.rect.centery = self.pos_y
-        self.speed = 1
-        self.vx, self.vy = __class__.calc_orientation(self.rect, self.pre_x, self.pre_y)
-        
-        return self
     
     def update(self):
         """
@@ -132,10 +89,47 @@ def main():
             if event.type == pg.QUIT:
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                flos = Enemy("flower")
-                for flo in flos.lst:
-                    if not flo == None:
-                        flowers.add(flo)
+                """
+                変数1 pre_x: 中心x座標
+                変数2 pre_x: 中心y座標
+                変数3 pos_x: 発射するx座標
+                変数4 pos_y: 発射するy座標
+                """
+                pre_x = random.randint(50, WIDTH-50)
+                pre_y = 100
+                num = 8
+                flos = []
+                for theta in range(0, 360, int(360/num)):
+                    print(theta)
+                    if theta == 0:
+                        pos_x = pre_x + 10
+                        pos_y = pre_y
+                    elif 0 < theta < 90:
+                        pos_x = pre_x + 10
+                        pos_y = pre_y - 10
+                    elif theta == 90:
+                        pos_x = pre_x
+                        pos_y = pre_y - 10
+                    elif 90 < theta < 180:
+                        pos_x = pre_x - 10
+                        pos_y = pre_y - 10
+                    elif theta == 180:
+                        pos_x = pre_x - 10
+                        pos_y = pre_y
+                    elif 180 < theta < 270:
+                        pos_x = pre_x - 10
+                        pos_y = pre_y + 10
+                    elif theta == 270:
+                        pos_x = pre_x
+                        pos_y = pre_y + 10
+                    elif 270 < theta < 360:
+                        pos_x = pre_x + 10
+                        pos_y = pre_y + 10
+
+                    flos.append(Enemy(pre_x, pre_y, pos_x, pos_y))
+                for flo in flos:
+                    flowers.add(flo)
+                    
         tmr += 1
         
         

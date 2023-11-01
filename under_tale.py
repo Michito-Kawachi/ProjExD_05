@@ -13,25 +13,52 @@ class Enemy(pg.sprite.Sprite):
     """
     敵の攻撃に関するクラス
     """
-    def __init__(self, pos_x: int, pos_y: int):
+    def __init__(self, type: str):
         """
-        弾を生成する
-        引数1 pos_x: 弾が出るx座標
-        引数2 pos_y: 弾が出るy座標
+        どの弾幕を生成するか判定する関数
+        引数1 type: 弾幕の種類（文字列）
         """
         super().__init__()
-
-        rad = 5
-        self.image = pg.Surface((2*rad, 2*rad))
-        pg.draw.circle(self.image, (255, 255, 255), (rad, rad), rad)
-        self.image.set_colorkey((0, 0, 0))
-        self.rect = self.image.get_rect()
-        self.speed = 1
-        #self.vx, self.vy = __class__.calc_orientation(self.rect, pos_x-10, pos_y-10)
-        self.vx = 2
-        self.vy = 3
-        self.rect.centerx = pos_x
-        self.rect.centery = pos_y
+        self.lst = []
+        if type == "flower":
+            """
+            変数1 pre_x: 中心x座標
+            変数2 pre_x: 中心y座標
+            変数3 pos_x: 発射するx座標
+            変数4 pos_y: 発射するy座標
+            """
+            self.pre_x = random.randint(50, WIDTH-50)
+            self.pre_y = 100
+            self.num = 8
+            for theta in range(0, 360, int(360/self.num)):
+                if theta == 0:
+                    self.pos_x = self.pre_x + 10
+                    self.pos_y = self.pre_y
+                elif 0 < theta < 90:
+                    self.pos_x = self.pre_x + 10
+                    self.pos_y = self.pre_y - 10
+                elif theta == 90:
+                    self.pos_x = self.pre_x
+                    self.pos_y = self.pre_y - 10
+                elif 90 < theta < 180:
+                    self.pos_x = self.pre_x - 10
+                    self.pos_y = self.pre_y - 10
+                elif theta == 180:
+                    self.pos_x = self.pre_x - 10
+                    self.pos_y = self.pre_y
+                elif 180 < theta < 270:
+                    self.pos_x = self.pre_x - 10
+                    self.pos_y = self.pre_y + 10
+                elif theta == 270:
+                    self.pos_x = self.pre_x
+                    self.pos_y = self.pre_y + 10
+                elif 270 < theta < 360:
+                    self.pos_x = self.pre_x + 10
+                    self.pos_y = self.pre_y + 10
+                print(f"pos_x = {self.pos_x}, pos_y = {self.pos_y}")
+                print(f"pre_x = {self.pre_x}, pre_y = {self.pre_y}")
+                print("------")
+                self.lst.append(__class__.gen_bul(self))
 
     def check_out(obj: pg.Rect):
         """
@@ -41,13 +68,13 @@ class Enemy(pg.sprite.Sprite):
         （画面内: True/画面外: False）
         """
         yoko, tate = True, True
-        if obj.right < 0 or obj.left > WIDTH:
+        if obj.right < 0 or WIDTH < obj.left:
             yoko = False
-        if obj.bottom < 0 or obj.bottom > 400:
+        if obj.bottom < 0 or 400 < obj.bottom:
             tate = False
         return yoko, tate
     
-    def calc_orientation(org: pg.Rect, pos_x, pos_y) -> tuple[float, float]:
+    def calc_orientation(org: pg.Rect, pre_x, pre_y):
         """
         orgから見て, pos_x, pos_yがどこにあるかを計算し, 方向ベクトルをタプルで返す
         引数1 org: 爆弾SurfaceのRect
@@ -55,26 +82,25 @@ class Enemy(pg.sprite.Sprite):
         引数3 pos_y: 目標のy座標
         戻り値: orgから見た目標の方向ベクトルを表すタプル
         """
-        x_diff, y_diff = pos_x-org.centerx, pos_y-org.centery
+        x_diff, y_diff = pre_x-org.centerx, pre_y-org.centery
         norm = math.sqrt(x_diff**2+y_diff**2)
         return -x_diff/norm, -y_diff/norm
 
-    def flower(self, pos_x, pos_y):
+    def gen_bul(self):
         """
-        拡散弾を作る関数
-        引数 pos_x: x座標, pos_y: y座標
+        弾を指定の場所から発射する関数
         """
-        self.lst = []
-        origin_x = random.randint(50, 750)
-        #origin_x = 
-    
-    def beam(self, pos_x, pos_y):
-        """
-        直線の3連弾を作る関数
-        引数1 pos_x: 原点x座標
-        引数2 pos_y: 原点y座標
-        """
-        pass
+        rad = 5
+        self.image = pg.Surface((2*rad, 2*rad))
+        pg.draw.circle(self.image, (255, 255, 255), (rad, rad), rad)
+        self.image.set_colorkey((0, 0, 0))
+        self.rect = self.image.get_rect()
+        self.rect.centerx = self.pos_x
+        self.rect.centery = self.pos_y
+        self.speed = 1
+        self.vx, self.vy = __class__.calc_orientation(self.rect, self.pre_x, self.pre_y)
+        
+        return self
     
     def update(self):
         """
@@ -95,7 +121,7 @@ def main():
     pg.draw.rect(bg, (0, 0, 0), (0, 0, WIDTH, 400))
     
 
-    enemies= pg.sprite.Group()
+    flowers = pg.sprite.Group()
     tmr = 0
     clock = pg.time.Clock()
 
@@ -105,12 +131,16 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
+            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
+                flos = Enemy("flower")
+                for flo in flos.lst:
+                    if not flo == None:
+                        flowers.add(flo)
         tmr += 1
-        if 3<tmr%60<15:
-            enemies.add(Enemy(20, 20))
         
-        enemies.update()
-        enemies.draw(screen)
+        
+        flowers.update()
+        flowers.draw(screen)
 
         pg.display.update()
         clock.tick(50)

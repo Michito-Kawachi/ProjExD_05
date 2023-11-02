@@ -187,10 +187,16 @@ class Beam(pg.sprite.Sprite):
         self.image = pg.transform.rotozoom(self.image, degree, 1.0)
         self.image.set_colorkey((0, 0, 0))
         self.rect = self.image.get_rect()
-        if pos_x <= WIDTH/2:
-            self.rect.topleft = (pos_x, pos_y)
+        if pos_y <= 200:
+            if pos_x <= WIDTH/2:
+                self.rect.topleft = (pos_x, pos_y)
+            else:
+                self.rect.topright = (pos_x, pos_y)
         else:
-            self.rect.topright = (pos_x, pos_y)
+            if pos_x <= WIDTH/2:
+                self.rect.bottomleft = (pos_x, pos_y)
+            else:
+                self.rect.bottomright = (pos_x, pos_y)
 
     def update(self, tmr, beam_time):
         """
@@ -271,8 +277,8 @@ def main():
             
             elif event.type == pg.KEYDOWN and event.key == pg.K_a:
                 # ビーム
-                pos_x = 600
-                pos_y = 100
+                pos_x = random.randint(100, 700)
+                pos_y = 350
                 pl_x = WIDTH/2
                 pl_y = HEIGHT/2
                 pre_beam = PreBeam(pos_x, pos_y, tmr)

@@ -134,12 +134,14 @@ class PreBeam(pg.sprite.Sprite):
     """
     ビームを発射する起点の円に関するクラス
     """
-    def __init__(self, pos_x, pos_y, tmr):
+    def __init__(self, pos_x, pos_y, pl_x, pl_y, tmr):
         """
         起点の円を描画する
         引数1 pos_x: 起点のx座標
         引数2 pos_y: 起点のy座標
-        引数3 tmr: ゲーム内時間
+        引数3 pl_x: プレイヤーのx座標
+        引数4 pl_y: プレイヤーのy座標
+        引数5 tmr: ゲーム内時間
         """
         super().__init__()
         self.start_time = tmr
@@ -150,22 +152,24 @@ class PreBeam(pg.sprite.Sprite):
         self.image.set_colorkey((0, 0, 0))
         self.rect = self.image.get_rect()
         self.rect.center = (pos_x, pos_y)
-
-    def get_delay_time(self):
-        return self.delay_time
+        self.pl_x = pl_x
+        self.pl_y = pl_y
+        self.beam_flg = False
     
-    def get_beam_time(self):
-        return self.beam_time
-    
-    def get_pos(self):
-        return self.rect.centerx, self.rect.centery
-    
-    def update(self, tmr):
+    def update(self, tmr, beams: pg.sprite.Group, dummy_beams: pg.sprite.Group):
         """
         ビーム継続時間を超えたらインスタンスを消去する関数
         引数1 tmr: ゲーム内時間
+        引数2 beams: ビームのグループ
+        引数3 dummy_beam: ダミービームのグループ
         """
-        if self.beam_time <= tmr:
+        if self.delay_time <= tmr <= self.beam_time and not self.beam_flg:
+            beam = Beam(self.rect.centerx, self.rect.centery, 
+                        self.pl_x, self.pl_y, self.delay_time)
+            beams.add(beam)
+            dummy_beams.add(beam)
+            self.beam_flg = True
+        elif self.beam_time <= tmr:
             self.kill()
 
 
@@ -173,12 +177,14 @@ class Beam(pg.sprite.Sprite):
     """
     ビームに関するクラス
     """
-    def __init__(self, pos_x, pos_y, pl_x, pl_y):
+    def __init__(self, pos_x, pos_y, pl_x, pl_y, tmr):
         """
         起点からビームを生成する関数
         引数1 pos_x: 起点のx座標
         引数2 pos_y: 起点のy座標
-        引数3 beam_time: ビームの継続時間
+        引数3 pl_x: プレイヤーのx座標
+        引数4 pl_y: プレイヤーのy座標
+        引数5 tmr: ゲーム内時間
         """
         super().__init__()
         self.image = pg.Surface((600, 40))
@@ -197,14 +203,14 @@ class Beam(pg.sprite.Sprite):
                 self.rect.bottomleft = (pos_x, pos_y)
             else:
                 self.rect.bottomright = (pos_x, pos_y)
+        self.beam_time = tmr + 50
 
-    def update(self, tmr, beam_time):
+    def update(self, tmr):
         """
         インスタンスを消去する関数
         引数1 tmr: ゲーム内時間
-        引数2 beam_time: ビームの持続時間
         """
-        if beam_time <= tmr:
+        if self.beam_time <= tmr:
             self.kill()
         
 
@@ -236,12 +242,7 @@ def main():
     # ビーム用変数
     pre_beams = pg.sprite.Group()
     beams = pg.sprite.Group()
-    fal_beams = pg.sprite.Group()
-    pre_beam = None
-    beam = None
-    prebeam_flg = False
-    beam_flg = False
-    beam_time = 0
+    dummy_beams = pg.sprite.Group()
     
     clock = pg.time.Clock()
 
@@ -278,14 +279,11 @@ def main():
             elif event.type == pg.KEYDOWN and event.key == pg.K_a:
                 # ビーム
                 pos_x = random.randint(100, 700)
-                pos_y = 350
+                pos_y = random.randint(50, 350)
                 pl_x = WIDTH/2
                 pl_y = HEIGHT/2
-                pre_beam = PreBeam(pos_x, pos_y, tmr)
+                pre_beam = PreBeam(pos_x, pos_y, pl_x, pl_y, tmr)
                 pre_beams.add(pre_beam)
-                prebeam_flg = True
-                beam_flg = True
-                beam_time = pre_beam.get_beam_time()
 
         # 拡散弾幕（直線）
         if line_flag and tmr == start_time + delay_time * lin_cnt and lin_cnt <= lin_num:
@@ -297,29 +295,18 @@ def main():
         elif lin_cnt >= lin_num:
             lin_cnt = 0
             line_flag = False
-
-        # ビーム
-        if prebeam_flg:
-            if pre_beam.get_delay_time() <= tmr <= pre_beam.get_beam_time() and beam_flg :
-                B_pos_x, B_pos_y = pre_beam.get_pos()
-                beam = Beam(B_pos_x, B_pos_y, pl_x, pl_y)
-                beams.add(beam)
-                fal_beams.add(beam)
-                beam_flg = False
-            elif pre_beam.get_beam_time() <= tmr:
-                beam_flg = False
                     
         tmr += 1
         flowers.update()
         flowers.draw(screen)
         atk_pl.update()
         atk_pl.draw(screen)
-        pre_beams.update(tmr)
+        pre_beams.update(tmr, beams, dummy_beams)
         pre_beams.draw(screen)
-        beams.update(tmr, beam_time)
+        beams.update(tmr)
         beams.draw(screen)
-        fal_beams.update(tmr, beam_time)
-        fal_beams.draw(screen)
+        dummy_beams.update(tmr)
+        dummy_beams.draw(screen)
         # テスト用ダミー
         screen.blit(pl,(WIDTH/2, HEIGHT/2))
 

@@ -230,8 +230,10 @@ def main():
     # ビーム用変数
     pre_beams = pg.sprite.Group()
     beams = pg.sprite.Group()
+    fal_beams = pg.sprite.Group()
     pre_beam = None
     beam = None
+    prebeam_flg = False
     beam_flg = False
     beam_time = 0
     
@@ -275,6 +277,7 @@ def main():
                 pl_y = HEIGHT/2
                 pre_beam = PreBeam(pos_x, pos_y, tmr)
                 pre_beams.add(pre_beam)
+                prebeam_flg = True
                 beam_flg = True
                 beam_time = pre_beam.get_beam_time()
 
@@ -290,11 +293,13 @@ def main():
             line_flag = False
 
         # ビーム
-        if beam_flg:
-            if pre_beam.get_delay_time() <= tmr <= pre_beam.get_beam_time():
+        if prebeam_flg:
+            if pre_beam.get_delay_time() <= tmr <= pre_beam.get_beam_time() and beam_flg :
                 B_pos_x, B_pos_y = pre_beam.get_pos()
                 beam = Beam(B_pos_x, B_pos_y, pl_x, pl_y)
                 beams.add(beam)
+                fal_beams.add(beam)
+                beam_flg = False
             elif pre_beam.get_beam_time() <= tmr:
                 beam_flg = False
                     
@@ -307,6 +312,8 @@ def main():
         pre_beams.draw(screen)
         beams.update(tmr, beam_time)
         beams.draw(screen)
+        fal_beams.update(tmr, beam_time)
+        fal_beams.draw(screen)
         # テスト用ダミー
         screen.blit(pl,(WIDTH/2, HEIGHT/2))
 

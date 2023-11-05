@@ -7,95 +7,67 @@ import pygame as pg
 
 WIDTH = 800
 HEIGHT = 500
-#追加
-jump_flag=0
-cnt=0
-otikasoku=0
-jump=[]
-high_jump=0
 
 
 class player_move:
     # 押下キーと移動量の辞書
-    delta={ pg.K_UP: (0, -1),#ハートが赤いときの辞書
-            pg.K_DOWN: (0, 1),
-            pg.K_LEFT: (-1, 0),
-            pg.K_RIGHT: (+1, 0),
+    delta={ pg.K_UP: (0, -5),#ハートが赤いときの辞書
+            pg.K_DOWN: (0, 5),
+            pg.K_LEFT: (-5, 0),
+            pg.K_RIGHT: (+5, 0),
         }
-    delta2={ pg.K_UP: (0, -3),#ハートが青いときの辞書
+    delta2={ pg.K_UP: (0, -2),#ハートが青いときの辞書
             pg.K_DOWN: (0, 0),
             pg.K_LEFT: (-1, 0),
             pg.K_RIGHT: (+1, 0),
         }
+    rad_per_frame = 2 * math.pi / 40
+    height = 70
+    floor = 375
 
     def __init__(self, xy: tuple[float, float],ao):
         #aoが０なら赤いハートで１なら青いハートの画像を使う
         if ao==0:
-            self.img = pg.transform.flip(pg.transform.rotozoom(pg.image.load(f"fig/0.png"),0,0.02),True, False)
+            self.img = pg.transform.flip(
+                pg.transform.rotozoom(
+                    pg.image.load(f"ex05_yusuke/fig/0.png"),0,0.02),True, False)
         elif ao==1:
-            self.img = pg.transform.flip(pg.transform.rotozoom(pg.image.load(f"fig/1.png"),0,0.02),True, False)
+            self.img = pg.transform.flip(
+                pg.transform.rotozoom(
+                    pg.image.load(f"ex05_yusuke/fig/1.png"),0,0.02),True, False)
         self.rct = self.img.get_rect()
         self.rct.center = xy
+        # 変更
+        self.jump_flg = False
+        self.frames = 0 # ジャンプ中のフレーム数
 
-    def update(self,key_lst: list[bool],screen:pg.Surface,ao):
+    def calc_y(self):
+        # https://qiita.com/odanny/items/297f32a334c41410cc5d
+        if self.rct.top > __class__.floor:
+            self.rct.top = __class__.floor
+            self.jump_flg = False
+            self.time = 0
+
+    def update(self,key_lst: list[bool],screen:pg.Surface, ao):
         sum_mv = [0, 0]
 
-        #普通のハートが赤いとき
-        if ao==0:
-            for k, mv in __class__.delta.items():
+        for k, mv in __class__.delta.items():
+            if ao and key_lst[pg.K_UP]:
+                self.jump_flg = True
                 if key_lst[k]:
                     sum_mv[0] += mv[0]
                     sum_mv[1] += mv[1]
-            self.rct.move_ip(sum_mv)
+        self.rct.move_ip(sum_mv)
 
-            #ハートが枠から出ないようにする
-            if self.rct[1]<=205:#上
-                self.rct[1]=205
-            if self.rct[1]>=376:#した
-                self.rct[1]=376
-            if self.rct[0]>=578:#右
-                self.rct[0]=578
-            if self.rct[0]<=205:#左
-                self.rct[0]=205
-
-
-        #ハートが青いとき
-        elif ao==1:
-            global jump,cnt,otikasoku,jump_flag,high_jump
-            jump.append(self.rct[1])  
-            for k, mv in __class__.delta2.items():   
-
-                #ハートが枠の下についていないとき落ちる
-                if jump[cnt]>=jump[cnt-1]:
-                    sum_mv[1]+=0.3     #+otikasoku   
-                    #otikasoku+=0.0003
-                    jump_flag=1
-
-                
-                if key_lst[k]:
-                    sum_mv[0] += mv[0]
-                    
-                    if jump[cnt]<=jump[cnt-1] and self.rct[1]>=high_jump:#ハートが前回以上に上がっていれば上にいける
-                        sum_mv[1] += mv[1]
-                        print(jump_flag)
-                        
-                        if jump_flag==1:
-                            high_jump=self.rct[1]-100
-                            jump_flag=0
-            
-
-            self.rct.move_ip(sum_mv)
-            if self.rct[1]<=205:#上
-                self.rct[1]=205
-            if self.rct[1]>=375:#した
-                self.rct[1]=375
-                #otikasoku=0
-            if self.rct[0]>=578:#右
-                self.rct[0]=578
-            if self.rct[0]<=205:#左
-                self.rct[0]=205
-            cnt+=1
-
+        #ハートが枠から出ないようにする
+        if self.rct[1]<=205:#上
+            self.rct[1]=205
+        if self.rct[1]>=376:#した
+            self.rct[1]=376
+        if self.rct[0]>=578:#右
+            self.rct[0]=578
+        if self.rct[0]<=205:#左
+            self.rct[0]=205
         screen.blit(self.img, self.rct)
 #追加
 

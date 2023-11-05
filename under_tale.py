@@ -7,6 +7,10 @@ import pygame as pg
 
 WIDTH = 800
 HEIGHT = 500
+STAGE_TOP = 200
+STAGE_BOTTOM = 400
+STAGE_LEFT = 205
+STAGE_RIGHT = 590
 
 
 def calc_orientation(org: pg.Rect, pre_x, pre_y):
@@ -33,6 +37,21 @@ def check_out(obj: pg.Rect):
     if obj.right < 0 or WIDTH < obj.left:
         yoko = False
     if obj.bottom < 0 or 400 < obj.bottom:
+        tate = False
+    return yoko, tate
+
+
+def check_out_stage(obj: pg.Rect):
+    """
+    objがステージ外に出たかを判定する関数
+    引数 obj: pg.Rect
+    横方向 縦方向のはみ出し判定結果
+    （ステージ内: True/ステージ外: False）
+    """
+    yoko, tate = True, True
+    if obj.right < STAGE_LEFT or STAGE_RIGHT < obj.left:
+        yoko = False
+    if obj.bottom < STAGE_TOP or STAGE_BOTTOM < obj.top:
         tate = False
     return yoko, tate
 
@@ -90,6 +109,24 @@ def calc_degree(pos_x, pos_y, pl_x, pl_y):
     radian = math.atan2(pl_y - pos_y, pl_x - pos_x)
     degree = radian * (180 / math.pi)
     return -degree
+
+
+def gen_rope_jump(air_y, pillars: pg.sprite.Group):
+    """
+    隙間のある4つの柱を生成する関数
+    引数1 air_y: 空間のy座標
+    引数2 pillars: 柱のグループ
+    """
+    gap = 15 # 隙間
+    lst = [
+        (STAGE_LEFT, STAGE_TOP, air_y - STAGE_TOP - gap, +1), # 左上
+        (STAGE_LEFT, STAGE_BOTTOM, STAGE_BOTTOM - air_y - gap, +1), # 左下
+        (STAGE_RIGHT, STAGE_TOP, air_y - STAGE_TOP - gap, -1), # 右上
+        (STAGE_RIGHT, STAGE_BOTTOM, STAGE_BOTTOM - air_y - gap, -1) # 右下
+    ]
+    for arg in lst:
+        pillar = Pillar(*arg)
+        pillars.add(pillar)
 
 
 class Bullet(pg.sprite.Sprite):
@@ -212,7 +249,40 @@ class Beam(pg.sprite.Sprite):
         """
         if self.beam_time <= tmr:
             self.kill()
-        
+
+
+class Pillar(pg.sprite.Sprite):
+    """
+    柱に関するクラス
+    """
+
+    def __init__(self, pos_x, pos_y, height, vx ):
+        """
+        柱を生成する関数
+        引数1 pos_x: 生成するx座標
+        引数2 pos_y: 生成するy座標
+        引数3 height: 柱の高さ
+        引数4 vx: 横方向の移動量
+        """
+        super().__init__()
+        self.image = pg.Surface((10, height))
+        pg.draw.rect(self.image, (255, 255, 255), (0, 0, 10, height))
+        self.rect = self.image.get_rect()
+        self.rect.centerx = pos_x
+        if pos_y == STAGE_TOP:
+            self.rect.top = pos_y
+        else:
+            self.rect.bottom = pos_y
+        self.vx = vx
+    
+    def update(self):
+        """
+        ステージ外に出たら消去
+        """
+        self.rect.centerx += self.vx
+        if check_out_stage(self.rect) != (True, True):
+            self.kill()
+
 
 def main():
     pg.display.set_caption("Under tale")
@@ -243,6 +313,9 @@ def main():
     pre_beams = pg.sprite.Group()
     beams = pg.sprite.Group()
     dummy_beams = pg.sprite.Group()
+
+    # ジャンプステージ用変数
+    pillars = pg.sprite.Group()
     
     clock = pg.time.Clock()
 
@@ -285,6 +358,13 @@ def main():
                 pre_beam = PreBeam(pos_x, pos_y, pl_x, pl_y, tmr)
                 pre_beams.add(pre_beam)
 
+            elif event.type == pg.KEYDOWN and event.key == pg.K_w:
+                # ジャンプステージ
+                gen_rope_jump(random.randint(STAGE_TOP+25, STAGE_BOTTOM-25),pillars)
+                # ステージの上下端からrandintすると高さが負の値になって、エラーが出ることがある
+                # そのための余裕(+25, -25)
+                # clock.tick(165)で作成
+
         # 拡散弾幕（直線）
         if line_flag and tmr == start_time + delay_time * lin_cnt and lin_cnt <= lin_num:
             flos = gen_flower(FL_pre_x, FL_pre_y)
@@ -307,11 +387,13 @@ def main():
         beams.draw(screen)
         dummy_beams.update(tmr)
         dummy_beams.draw(screen)
+        pillars.update()
+        pillars.draw(screen)
         # テスト用ダミー
         screen.blit(pl,(WIDTH/2, HEIGHT/2))
 
         pg.display.update()
-        clock.tick(50)
+        clock.tick(165)
 
 
 if __name__ == "__main__":

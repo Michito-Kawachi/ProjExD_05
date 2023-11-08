@@ -5,13 +5,11 @@ import sys
 from typing import Any
 import pygame as pg
 import os
-
 from pygame.sprite import AbstractGroup
 
 
 WIDTH = 800
 HEIGHT = 500
-
 main_dir = os.path.split(os.path.abspath(__file__))[0]
 
 
@@ -37,6 +35,7 @@ class Enemy(pg.sprite.Sprite):
     def update(self, screen: pg.Surface):
         screen.blit(self.img, (250, 0))
 
+
 # プレイヤーが画面内にいるかどうかの判定処理
 def check_bound(obj_rct: pg.Rect) -> tuple[bool, bool]:
     yoko, tate = True, True
@@ -45,6 +44,7 @@ def check_bound(obj_rct: pg.Rect) -> tuple[bool, bool]:
     if obj_rct.top < 205 or 395 < obj_rct.bottom:
         tate = False
     return yoko, tate
+
 
 # 説明分を作成・表示
 class Explanation(pg.sprite.Sprite):
@@ -60,7 +60,6 @@ class Explanation(pg.sprite.Sprite):
     def update(self, sur:pg.Surface, lst=[0,0]):
         self.img = self.font.render(f"{self.str}", True, self.color)
         sur.blit(self.img, lst)
-
 
 
 class Command(pg.sprite.Sprite):
@@ -99,6 +98,10 @@ class player_move:
     }
 
     def __init__(self, xy: tuple[float, float]):
+        """
+        プレイヤーの初期化
+        引数1 xy: 初期xy座標
+        """
         self.image = pg.transform.flip(  # 左右反転
             pg.transform.rotozoom( 
                 pg.image.load(f"ex05/fig/0.png"), 0, 0.02), True, False)
@@ -122,10 +125,7 @@ class player_move:
         if self.rect[0]<=205:#左
             self.rect[0]=205
 
-
-        
         screen.blit(self.image, self.rect)
-
 
 
 # HP関連の機能を実装するためのクラス
@@ -165,8 +165,7 @@ def attack_action(attack_bar_lis, sur: pg.Surface):
         attack_bar_lis[1] *= -1
     attack_bar_lis[0] += attack_bar_lis[1] # バーの位置をattack_bar_lis[1]分ずらす
     pg.draw.rect(attack_sur, (255, 255, 255), (attack_bar_lis[0], 25, 10, 150))
-    sur.blit(attack_sur, (0, 0))
-    
+    sur.blit(attack_sur, (0, 0))    
 
 
 # 以下敵の攻撃についての機能の実装
@@ -413,8 +412,7 @@ class Dummy_beam(pg.sprite.Sprite):
             self.kill()
 
 
-
-def main():
+def do_battle():
     clock = pg.time.Clock()
     if pg.mixer:
         music = os.path.join(main_dir, "data", "voice_50210.mp3")
@@ -435,7 +433,7 @@ def main():
     white = (255, 255, 255)
     yellow = (255, 205, 0)
 
-    #　ここからhpクラスオブジェクトを生成
+    # ここからhpクラスオブジェクトを生成
     hpbar_width = 100
     hpbar_sur = pg.Surface((250, 50)) # HPバーが表示される空間
     hp_HP = Hp()
@@ -450,7 +448,7 @@ def main():
     hp_bar_black.genobj((1, 1, 1), (170, 0, 100, 20), hpbar_sur)
     damage_txt = Hp()
     damage_txt.genfont("")
-    #　ここまで
+    # ここまで
     
     attack_bar_lis = [10, 5] # インデックス０（表示するｘ座標）インデックス１（移動するｘ座標のピクセル量）
     attack_damage = 0 # プレイヤーの攻撃値を保持
@@ -488,7 +486,6 @@ def main():
     enemy_dead_flag = False
     pressing = False
     attacked = False
-
 
     tmr = 0
     while True:
@@ -530,12 +527,14 @@ def main():
             beams = pg.sprite.Group()
             dummy_beams = pg.sprite.Group()
 
-
             processed = True
     
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
+            # マップ＆戦闘状態移動テスト用
+            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
+                return 2
             
             if event.type == pg.KEYDOWN and event.key == pg.K_RIGHT and mode == "standard":
                 if cmd_select == 3:
@@ -582,6 +581,11 @@ def main():
                 mode = "standard"
                 pg.draw.rect(menu_sur, (0, 0, 0), (5, 5, 590, 190))
 
+
+            if event.type == pg.QUIT:
+                return 0  
+            
+            
             if event.type == pg.QUIT:
                 return 0  
             
@@ -677,7 +681,7 @@ def main():
                 pressing = False
 
             if event.type == pg.KEYDOWN and event.key == pg.K_RETURN and dead_flag:
-                return        
+                return 2      
             
         if hp_bar_green.width <= 0:
             action_txt = "* だんだんめのまえがくらくなっていく"
@@ -722,8 +726,6 @@ def main():
             ex_1.color = white
             ex_1.update(menu_sur, [30, 30])
                 
-            
-
         if mode == "ATTACK":
             attack_action(attack_bar_lis, menu_sur)
 
@@ -795,7 +797,7 @@ def main():
         hp_bar_green.update(hpbar_sur)
         hp_HP.update(hpbar_sur, [20, 5], "HP")
         hp_num.update(hpbar_sur, [170, 5], f"{hp_bar_green.width}/100")
-        #　ここまで
+        # ここまで
 
         screen.blit(hpbar_sur, (250, 405)) # hpbar_surの表示位置の指定
         hpbar_sur.set_colorkey((0, 0, 0)) 
@@ -903,6 +905,173 @@ def main():
         pg.display.update()
         tmr += 1
         clock.tick(165)
+
+
+class Chara():
+    """
+    探索画面のプレイヤーに関するクラス
+    """
+    delta = { # 押下キーと移動量の辞書
+        pg.K_UP: (0, -1),
+        pg.K_DOWN: (0, 1),
+        pg.K_LEFT: (-1, 0),
+        pg.K_RIGHT: (+1, 0),
+    }
+
+    def __init__(self, xy: tuple[float, float], filename):
+        """
+        プレイヤーの初期化
+        引数1 xy: 初期xy座標
+        引数2 filename: 読み込む画像ファイルのアドレス
+        """
+        self.image = pg.transform.flip(  # 左右反転
+            pg.transform.rotozoom( 
+                pg.image.load(filename), 0, 0.02), True, False)
+        self.rect = self.image.get_rect()
+        self.rect.center = xy
+
+    def update(self,key_lst: list[bool],screen:pg.Surface):
+        """
+        プレイヤーの表示位置の更新処理
+        引数1 key_lst: 押されているキーのリスト
+        引数2 screen: pg.Surface
+        """
+        sum_mv = [0, 0]
+        for k, mv in __class__.delta.items():
+            if key_lst[k]:
+                sum_mv[0] += mv[0]
+                sum_mv[1] += mv[1]
+        self.rect.move_ip(sum_mv)
+
+        tate_gap = 200
+        yoko_gap = 250
+        tile_mv = [0, 0]
+        if self.rect[1] <= tate_gap:#上
+            self.rect[1] = tate_gap
+            tile_mv[1] += 1
+
+        if self.rect[1] >= HEIGHT - tate_gap:#した
+            self.rect[1] = HEIGHT - tate_gap
+            tile_mv[1] += -1
+
+        if self.rect[0] <= yoko_gap: # 左
+            self.rect[0] = yoko_gap
+            tile_mv[0] += 1
+
+        if self.rect[0] >= WIDTH - yoko_gap: # 右
+            self.rect[0] = WIDTH - yoko_gap
+            tile_mv[0] += -1
+
+        screen.blit(self.image, self.rect)
+        return tile_mv
+
+    def get_rct(self):
+        return self.rect.centerx, self.rect.centery
+
+
+class GenMap(pg.sprite.Sprite):
+    """
+    マップタイルに関するクラス
+    """
+    def __init__(self, x, y):
+        """
+        マップを生成する関数
+        引数1 x: 初期配置のx座標
+        引数2 y: 初期配置のy座標
+        """
+        super().__init__()
+        # self.image = pg.Surface((30, 30))
+        # pg.draw.rect(self.image, (34, 139, 34), (0, 0, 30, 30))
+        # pg.draw.rect(self.image, (60, 179, 113), (1, 1, 29, 29))
+        self.image = pg.Surface((WIDTH, HEIGHT))
+        pg.draw.rect(self.image, (34, 139, 34), (0, 0, WIDTH, HEIGHT))
+        self.rect = self.image.get_rect()
+        self.rect.centerx = x
+        self.rect.centery = y
+        self.batflg = False
+
+    def encount(self):
+        """
+        エンカウントを判定する関数
+        """
+        percent = random.randint(0, 10000)
+        if percent <= 5:
+            self.batflg = True
+
+    def update(self, tile_mv: list, screen: pg.Surface):
+        """
+        マップを更新する関数
+        引数1 tile_mv: マップの移動量[0, 0]
+        引数2 screen: pg.Surface
+        """
+        self.rect.move_ip(tile_mv)
+        if self.rect.left <= -230:
+            self.rect.left = -230
+        elif self.rect.right >= WIDTH + 250:
+            self.rect.right = WIDTH + 250
+        if self.rect.top <= -180:
+            self.rect.top = -180
+        elif self.rect.bottom >= HEIGHT + 200:
+            self.rect.bottom = HEIGHT + 200
+        
+        # エンカウント処理
+        if tile_mv != [0, 0]:
+            __class__.encount(self)
+        screen.blit(self.image, (self.rect))
+
+
+def do_map():
+    clock = pg.time.Clock()
+
+    # if pg.mixer:
+    #     music = os.path.join(main_dir, "data", "voice_50210.mp3")
+    #     pg.mixer.music.load(music)
+    #     pg.mixer.music.play(-1)
+    emys = pg.sprite.Group()
+    emys.add(Enemy())
+    pg.display.set_caption("Under tale")
+    screen = pg.display.set_mode((WIDTH, HEIGHT))
+    bg = pg.Surface((WIDTH, HEIGHT))
+    pg.draw.rect(bg, (0, 0, 0), (0, 0, WIDTH, HEIGHT))
+    
+    chara = Chara((WIDTH/2, HEIGHT/2), "ex05/fig/0.png")
+
+    #マップ生成
+    tile = GenMap(100, 100)
+    tile_mv = [0, 0]
+
+    while True:
+        key_lst = pg.key.get_pressed()
+        for event in pg.event.get():
+            if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_q):
+                return 0
+            elif event.type == pg.KEYDOWN and event.key == pg.K_SPACE: # 画面遷移テスト
+                return 1
+            elif event.type == pg.KEYDOWN and event.key == pg.K_a:
+                print(chara.rect.center)
+        screen.blit(bg, (0, 0))
+        
+        tile.update(tile_mv, screen)
+        tile_mv = [0, 0]
+        tile_mv = chara.update(key_lst, screen)
+        if tile.batflg:
+            time.sleep(1)
+            return 1
+
+        pg.display.update()
+        clock.tick(165)
+
+
+def main():
+    # 0: quit game, 1: do_battle, 2: do_map
+    flg = 2
+    while True:
+        if flg == 0:
+            return
+        elif flg == 1:
+            flg = do_battle()
+        elif flg == 2:
+            flg = do_map()
 
 
 if __name__ == "__main__":

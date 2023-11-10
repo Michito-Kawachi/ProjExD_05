@@ -580,15 +580,7 @@ def do_battle():
             if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE and not (mode == "standard" or mode == "ATTACK" or mode == "avoid"):
                 mode = "standard"
                 pg.draw.rect(menu_sur, (0, 0, 0), (5, 5, 590, 190))
-
-
-            if event.type == pg.QUIT:
-                return 0  
-            
-            
-            if event.type == pg.QUIT:
-                return 0  
-            
+                            
             if not(pressing) and event.type == pg.KEYDOWN and event.key == pg.K_RETURN and mode == "FIGHT":
                 mode = "ATTACK"
                 pressing = True
@@ -985,6 +977,7 @@ class GenMap(pg.sprite.Sprite):
         # pg.draw.rect(self.image, (60, 179, 113), (1, 1, 29, 29))
         self.image = pg.Surface((WIDTH, HEIGHT))
         pg.draw.rect(self.image, (34, 139, 34), (0, 0, WIDTH, HEIGHT))
+        pg.draw.ellipse(self.image, (60, 170, 112), (30, 30, 600, 400))
         self.rect = self.image.get_rect()
         self.rect.centerx = x
         self.rect.centery = y
@@ -1022,7 +1015,7 @@ class GenMap(pg.sprite.Sprite):
 
 def do_map():
     clock = pg.time.Clock()
-
+    pg.mixer.stop()
     # if pg.mixer:
     #     music = os.path.join(main_dir, "data", "voice_50210.mp3")
     #     pg.mixer.music.load(music)
@@ -1037,7 +1030,7 @@ def do_map():
     chara = Chara((WIDTH/2, HEIGHT/2), "ex05/fig/0.png")
 
     #マップ生成
-    tile = GenMap(100, 100)
+    tile = GenMap(0, 0)
     tile_mv = [0, 0]
 
     while True:
@@ -1052,7 +1045,6 @@ def do_map():
         screen.blit(bg, (0, 0))
         
         tile.update(tile_mv, screen)
-        tile_mv = [0, 0]
         tile_mv = chara.update(key_lst, screen)
         if tile.batflg:
             time.sleep(1)

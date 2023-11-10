@@ -413,6 +413,20 @@ class Dummy_beam(pg.sprite.Sprite):
             self.kill()
 
 
+class Arrow(pg.sprite.Sprite):
+    """
+    矢印攻撃に関するクラス
+    """
+    def __init__(self):
+        """
+        初期化
+        """
+        super().__init__()
+        self.image = pg.Surface(40, 20)
+        pg.draw.rect(self.image, (100, 100, 0), (0, 5, 20, 10))
+        pg.draw.polygon(self.image, (100, 100, 0), [()])
+
+
 
 def main():
     clock = pg.time.Clock()
@@ -489,6 +503,8 @@ def main():
     pressing = False
     attacked = False
 
+    test_flg = False
+
 
     tmr = 0
     while True:
@@ -530,12 +546,20 @@ def main():
             beams = pg.sprite.Group()
             dummy_beams = pg.sprite.Group()
 
+            # 矢印用変数
+            arrows = pg.sprite.Group()
 
             processed = True
     
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
+            
+            #テスト環境を用意
+            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
+                pg.mixer.stop()
+                test_flg = True
+
             
             if event.type == pg.KEYDOWN and event.key == pg.K_RIGHT and mode == "standard":
                 if cmd_select == 3:
@@ -581,9 +605,6 @@ def main():
             if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE and not (mode == "standard" or mode == "ATTACK" or mode == "avoid"):
                 mode = "standard"
                 pg.draw.rect(menu_sur, (0, 0, 0), (5, 5, 590, 190))
-
-            if event.type == pg.QUIT:
-                return 0  
             
             if not(pressing) and event.type == pg.KEYDOWN and event.key == pg.K_RETURN and mode == "FIGHT":
                 mode = "ATTACK"
@@ -863,7 +884,10 @@ def main():
                     pl_y = player.rect[1]
                     pre_beam = PreBeam(pos_x, pos_y, pl_x, pl_y, tmr)
                     pre_beams.add(pre_beam)
-
+                
+            elif test_flg:
+                if tmr % 100 == 0:
+                    arrows.add(Arrow())
 
             screen.blit(sikaku1, (200, 200))
             key_lst = pg.key.get_pressed() # 入力キーを取得
@@ -898,6 +922,8 @@ def main():
             beams.draw(screen)
             dummy_beams.update(tmr)
             dummy_beams.draw(screen)
+            arrows.update()
+            arrows.draw(screen)
 
 
         pg.display.update()

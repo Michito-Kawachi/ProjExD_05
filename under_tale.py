@@ -1,4 +1,5 @@
 import math
+import os
 import random
 import time
 import sys
@@ -11,6 +12,7 @@ STAGE_TOP = 200
 STAGE_BOTTOM = 400
 STAGE_LEFT = 205
 STAGE_RIGHT = 590
+main_dir = os.path.split(os.path.abspath(__file__))[0]
 
 
 def calc_orientation(org: pg.Rect, pre_x, pre_y):
@@ -284,6 +286,95 @@ class Pillar(pg.sprite.Sprite):
             self.kill()
 
 
+class Arrow(pg.sprite.Sprite):
+    """
+    矢印攻撃に関するクラス
+    """
+    def __init__(self, theta, pos_x, pos_y):
+        """
+        初期化
+        """
+        super().__init__()
+        self.image = pg.Surface((40, 20))
+        pg.draw.line(self.image, (255, 255, 0), (0, 9), (30, 9), 5)
+        pg.draw.polygon(self.image, (255, 255, 0), [(40, 10), (30, 0), (30, 20)])
+        self.mask = pg.mask.from_surface(self.image)
+        self.image = pg.transform.rotozoom(self.image, theta, 1.0)
+        self.image.set_colorkey((0, 0, 0))
+        self.rect = self.image.get_rect()
+        self.rect.center = pos_x, pos_y
+        if theta == 0:
+            self.move_v = (+1, 0)
+        elif theta == 90:
+            self.move_v = (0, -1)
+        elif theta == 180:
+            self.move_v = (-1, 0)
+        elif theta == 270:
+            self.move_v = (0, +1)
+    
+    def update(self):
+        self.rect.move_ip(self.move_v)
+        if check_out(self.rect) != (True, True):
+            self.kill()
+        
+
+class NoMovePL(pg.sprite.Sprite):
+    """
+    動かないプレイヤーに関するクラス
+    """
+    def __init__(self):
+        super().__init__()
+        filename = os.path.join(main_dir, "fig", "0.png")
+        self.image = pg.transform.rotozoom(
+            pg.image.load(filename),
+            0,
+            0.02
+        )
+        self.rect = self.image.get_rect()
+        self.rect.center = WIDTH/2, HEIGHT/2
+
+
+class Shield(pg.sprite.Sprite):
+    """
+    盾に関するクラス
+    """ 
+    # 元画像imgを生成
+    img = pg.Surface((50, 50))   
+    pg.draw.line(img, (70, 130, 180), (0, 0), (0, 50), 7)
+    pg.draw.line(img, (70, 130, 180), (0, 50), (25, 25), 4)
+
+    def __init__(self, pl_x, pl_y):
+        """
+        盾を初期化
+        引数1 pl_x: プレイヤーのx座標
+        引数2 pl_y: プレイヤーのy座標
+        """
+        super().__init__()
+        self.image = __class__.img
+        self.image.set_colorkey((0, 0, 0))
+        self.mask = pg.mask.from_surface(self.img)
+        self.rect = self.image.get_rect()
+        self.rect.left = pl_x - 30
+        self.rect.centery = pl_y
+        self.dir = 0
+
+    def update(self, key_lst: list[bool]):
+        """
+        キーに応じてimageを回転
+        引数 key_lst: 押下されたキーのリスト[bool]
+        """
+        if key_lst[pg.K_LEFT]:
+            self.dir = 0 # 左
+        elif key_lst[pg.K_DOWN]:
+            self.dir = 90 # 下
+        elif key_lst[pg.K_RIGHT]:
+            self.dir = 180 # 右
+        elif key_lst[pg.K_UP]:
+            self.dir = 270 # 上
+        self.image = pg.transform.rotozoom(__class__.img, self.dir, 1.0)
+        self.image.set_colorkey((0, 0, 0))
+
+
 def main():
     pg.display.set_caption("Under tale")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -304,11 +395,6 @@ def main():
     # 自機狙い用変数
     atk_pl = pg.sprite.Group()
 
-    # テスト用自機狙い用ダミーSurface
-    pl = pg.Surface((20, 20))
-    pg.draw.circle(pl, (255, 0, 0), (10, 10), 20)
-    pl_rct = pl.get_rect()
-
     # ビーム用変数
     pre_beams = pg.sprite.Group()
     beams = pg.sprite.Group()
@@ -316,6 +402,14 @@ def main():
 
     # ジャンプステージ用変数
     pillars = pg.sprite.Group()
+
+    # 矢印用変数
+    arrows = pg.sprite.Group()
+
+    # 自機
+    no_move = NoMovePL()
+    shields = pg.sprite.Group()
+    shields.add(Shield(no_move.rect.centerx, no_move.rect.centery))
     
     clock = pg.time.Clock()
 
@@ -323,7 +417,7 @@ def main():
         screen.blit(bg, (0, 0))
         screen.blit(sikaku1, (200, 200))
         for event in pg.event.get():
-            if event.type == pg.QUIT:
+            if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_q):
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 # 拡散弾幕（ランダム）
@@ -364,6 +458,19 @@ def main():
                 # ステージの上下端からrandintすると高さが負の値になって、エラーが出ることがある
                 # そのための余裕(+25, -25)
                 # clock.tick(165)で作成
+            
+            elif event.type == pg.KEYDOWN and event.key == pg.K_z:
+                arrow = Arrow(0, 100, 300)
+                arrows.add(arrow)
+            elif event.type == pg.KEYDOWN and event.key == pg.K_x:
+                arrow = Arrow(90, WIDTH/2, 350)
+                arrows.add(arrow)
+            elif event.type == pg.KEYDOWN and event.key == pg.K_c:
+                arrow = Arrow(180, 700, 300)
+                arrows.add(arrow)
+            elif event.type == pg.KEYDOWN and event.key == pg.K_v:
+                arrow = Arrow(270, 400, 50)
+                arrows.add(arrow)
 
         # 拡散弾幕（直線）
         if line_flag and tmr == start_time + delay_time * lin_cnt and lin_cnt <= lin_num:
@@ -376,6 +483,7 @@ def main():
             lin_cnt = 0
             line_flag = False
                     
+        key_lst = pg.key.get_pressed() # 入力キーを取得
         tmr += 1
         flowers.update()
         flowers.draw(screen)
@@ -389,8 +497,12 @@ def main():
         dummy_beams.draw(screen)
         pillars.update()
         pillars.draw(screen)
+        arrows.update()
+        arrows.draw(screen)
+        shields.update(key_lst)
+        shields.draw(screen)
         # テスト用ダミー
-        screen.blit(pl,(WIDTH/2, HEIGHT/2))
+        screen.blit(no_move.image, no_move.rect)
 
         pg.display.update()
         clock.tick(165)

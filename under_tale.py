@@ -604,8 +604,7 @@ class Shield(pg.sprite.Sprite):
         self.image.set_colorkey((0, 0, 0))
         self.mask = pg.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
-        self.rect.left = pl_x - 30
-        self.rect.centery = pl_y
+        self.xy = (pl_x, pl_y)
         self.dir = 0
 
     def update(self, key_lst: list[bool], screen: pg.Surface):
@@ -623,6 +622,8 @@ class Shield(pg.sprite.Sprite):
         elif key_lst[pg.K_UP]:
             self.dir = 270 # 上
         self.image = pg.transform.rotozoom(__class__.img, self.dir, 1.0)
+        self.rect = self.image.get_rect()
+        self.rect.center = self.xy
         self.image.set_colorkey((0, 0, 0))
         self.mask = pg.mask.from_surface(self.image)
         screen.blit(self.image, self.rect)
@@ -745,7 +746,8 @@ def main():
             enemy_hp_bar_red.locate = (250, 40, 300, 20)
             enemy_hp_bar_green.locate = (250, 40, enemy_hp, 20)
             player.image = pg.transform.rotozoom(pg.image.load(f"ex05/fig/0.png"), 0, 0.02)
-            attack_type = random.randint(0, 5)
+            #attack_type = random.randint(0, 5)
+            attack_type = 5
             if attack_type == 4:
                 player.image = pg.transform.rotozoom(pg.image.load(f"ex05/fig/1.png"), 0, 0.02)
                

@@ -746,8 +746,8 @@ def main():
             enemy_hp_bar_red.locate = (250, 40, 300, 20)
             enemy_hp_bar_green.locate = (250, 40, enemy_hp, 20)
             player.image = pg.transform.rotozoom(pg.image.load(f"ex05/fig/0.png"), 0, 0.02)
-            #attack_type = random.randint(0, 5)
-            attack_type = 5
+            attack_type = random.randint(0, 5)
+            # attack_type = 5
             if attack_type == 4:
                 player.image = pg.transform.rotozoom(pg.image.load(f"ex05/fig/1.png"), 0, 0.02)
                

@@ -114,12 +114,13 @@ class player_move:
         self.jump_tmr = 0
 
     # プレイヤーの表示位置の更新処理
-    def update(self,key_lst: list[bool],screen:pg.Surface, gravity=None, hop=None):
+    def update(self, key_lst: list[bool],screen:pg.Surface, gravity=None, hop=None):
         self.sum_mv = [0, 0]
-        for k, mv in __class__.delta.items():
-            if key_lst[k]:
-                self.sum_mv[0] += mv[0]
-                self.sum_mv[1] += mv[1]
+        if key_lst:
+            for k, mv in __class__.delta.items():
+                if key_lst[k]:
+                    self.sum_mv[0] += mv[0]
+                    self.sum_mv[1] += mv[1]
         if gravity and not self.jump:
             self.sum_mv[1] = 1
         elif hop:
@@ -531,20 +532,17 @@ class Arrow(pg.sprite.Sprite):
     """
     矢印攻撃に関するクラス
     """
-    def __init__(self, theta, pos_x, pos_y):
+    def __init__(self, theta, pos_x, pos_y, sur:pg.Surface):
         """
         初期化
-        引数1 theta: 回転角度[0, 90, 180, 270]
-        引数2 pos_x: 発射するx座標
-        引数3 pos_y: 発射するy座標
         """
         super().__init__()
         self.image = pg.Surface((40, 20))
         pg.draw.line(self.image, (255, 255, 0), (0, 9), (30, 9), 5)
         pg.draw.polygon(self.image, (255, 255, 0), [(40, 10), (30, 0), (30, 20)])
-        self.mask = pg.mask.from_surface(self.image)
         self.image = pg.transform.rotozoom(self.image, theta, 1.0)
         self.image.set_colorkey((0, 0, 0))
+        self.mask = pg.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.center = pos_x, pos_y
         if theta == 0:
@@ -555,33 +553,11 @@ class Arrow(pg.sprite.Sprite):
             self.move_v = (-2, 0)
         elif theta == 270:
             self.move_v = (0, +2)
-    
+
     def update(self):
         self.rect.move_ip(self.move_v)
         if check_out(self.rect) != (True, True):
             self.kill()
-        
-
-class NoMovePL(pg.sprite.Sprite):
-    """
-    動かないプレイヤーに関するクラス
-    """
-    def __init__(self):
-        """
-        初期化
-        """
-        super().__init__()
-        filename = os.path.join(main_dir, "fig", "0.png")
-        self.image = pg.transform.rotozoom(
-            pg.image.load(filename),
-            0,
-            0.02
-        )
-        self.rect = self.image.get_rect()
-        self.rect.center = WIDTH/2, 250
-
-    def update(self, screen: pg.Surface):
-        screen.blit(self.image, self.rect)
 
 
 class Shield(pg.sprite.Sprite):
@@ -590,10 +566,10 @@ class Shield(pg.sprite.Sprite):
     """ 
     # 元画像imgを生成
     img = pg.Surface((50, 50))   
-    pg.draw.line(img, (70, 130, 180), (0, 0), (0, 50), 10)
-    # pg.draw.line(img, (70, 130, 180), (0, 28), (25, 25), 4)
+    pg.draw.line(img, (70, 130, 180), (0, 0), (0, 50), 7)
+    pg.draw.line(img, (70, 130, 180), (0, 50), (25, 25), 4)
 
-    def __init__(self, pl_x, pl_y):
+    def __init__(self):
         """
         盾を初期化
         引数1 pl_x: プレイヤーのx座標
@@ -602,16 +578,15 @@ class Shield(pg.sprite.Sprite):
         super().__init__()
         self.image = __class__.img
         self.image.set_colorkey((0, 0, 0))
-        self.mask = pg.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
-        self.xy = (pl_x, pl_y)
+        self.rect.centerx = 400
+        self.rect.centery = 300
         self.dir = 0
 
-    def update(self, key_lst: list[bool], screen: pg.Surface):
+    def update(self, key_lst: list[bool]):
         """
         キーに応じてimageを回転
-        引数1 key_lst: 押下されたキーのリスト[bool]
-        引数2 screen: pg.Surface
+        引数 key_lst: 押下されたキーのリスト[bool]
         """
         if key_lst[pg.K_LEFT]:
             self.dir = 0 # 左
@@ -621,12 +596,11 @@ class Shield(pg.sprite.Sprite):
             self.dir = 180 # 右
         elif key_lst[pg.K_UP]:
             self.dir = 270 # 上
+        old_center = self.rect.center
         self.image = pg.transform.rotozoom(__class__.img, self.dir, 1.0)
-        self.rect = self.image.get_rect()
-        self.rect.center = self.xy
         self.image.set_colorkey((0, 0, 0))
-        self.mask = pg.mask.from_surface(self.image)
-        screen.blit(self.image, self.rect)
+        self.rect = self.image.get_rect()
+        self.rect.center = old_center 
 
 
 def main():
@@ -725,7 +699,7 @@ def main():
         elif hp_bar_green.width < 0:
             hp_bar_green.width = 0
         hp_bar_green.locate = (50, 0, hp_bar_green.width, 20)
-        if enemy_hp > 20:
+        if enemy_hp > 200:
             menu_txt = "* じっとこちらをみている"
         elif enemy_hp > 100:
             menu_txt = "* こわいかおでにらんでいる"
@@ -739,6 +713,8 @@ def main():
 
         # 以下敵の攻撃用変数などを生成またはリセット
         if turn_flag and not processed:
+            pg.draw.rect(sikaku1, (255, 255, 255), (0, 0, 400, 200))
+            pg.draw.rect(sikaku1, (0, 0, 0), (5, 5, 390, 190))
             player.rect.center = [WIDTH/2, HEIGHT/2]
             gravity = False
             arrow_flg = False
@@ -774,10 +750,13 @@ def main():
             pillars = pg.sprite.Group()
             dummy_pillars = pg.sprite.Group()
 
-            # 矢印攻撃用変数
+            # 矢印用変数
             arrows = pg.sprite.Group()
-            no_move = NoMovePL()
-            shield = Shield(no_move.rect.centerx, no_move.rect.centery)
+
+            # 自機
+            shields = pg.sprite.Group()
+            shields.add(Shield())
+
 
             processed = True
     
@@ -1198,21 +1177,35 @@ def main():
                 # ステージの上下端からrandintすると高さが負の値になって、エラーが出ることがある
                 # そのための余裕(+25, -25)
                 # clock.tick(165)で作成
-            
+
             elif attack_type == 5:
-                # 矢印
-                arrow_flg = True
-                if tmr % 80 == 0:
-                    enemy_attack_count += 1
-                    arrow_choice = random.choice(arrow_set)
-                    # 上テスト
-                    # arrow = Arrow(arrow_set[3][0], arrow_set[3][1], arrow_set[3][2])
-                    arrow = Arrow(arrow_choice[0], arrow_choice[1], arrow_choice[2])
-                    arrows.add(arrow)
-                shield.update(key_lst, screen)
-                no_move.update(screen)
-            
-            if not gravity and not arrow_flg:
+                player.rect.center = [WIDTH/2, 300]
+                pg.draw.rect(sikaku1, (0, 0, 0), (0, 0, 400, 200))
+                pg.draw.rect(sikaku1, (255, 255, 255), (150, 50, 100, 100))
+                pg.draw.rect(sikaku1, (0, 0, 0), (155, 55, 90, 90))
+                screen.blit(sikaku1, (200, 200))
+                if tmr % 50 == 0:
+                    enemy_attack_count += 0.4
+                    i = random.randint(0, 3)
+                    if i == 0:
+                        arrow = Arrow(0, 215, 300, screen)
+                        arrows.add(arrow)
+                    elif i == 1:
+                        arrow = Arrow(90, WIDTH/2, 485, screen)
+                        arrows.add(arrow)
+                    elif i == 2:
+                        arrow = Arrow(180, 585, 300, screen)
+                        arrows.add(arrow)
+                    elif i == 3:
+                        arrow = Arrow(270, WIDTH/2, 115, screen)
+                        arrows.add(arrow)
+                    
+                shields.update(key_lst)
+                shields.draw(screen)
+                player.update(None, screen)
+                
+
+            if not (attack_type == 4 or attack_type == 5):
                 player.update(key_lst, screen) # プレイヤーの表示位置を更新
 
             if len(pg.sprite.spritecollide(player, flowers, True)) != 0:
@@ -1233,6 +1226,13 @@ def main():
                 if pg.mixer:
                     hit_sound.play()
 
+            if len(pg.sprite.spritecollide(player, arrows, True)) != 0:
+                hp_bar_green.width -= 2
+                hit_sound = load_sound("ショット命中.mp3")
+                if pg.mixer:
+                    hit_sound.play()
+
+
             for beam in beams:
                 if pg.sprite.collide_mask(player, beam):
                     hp_bar_green.width -= 10
@@ -1240,15 +1240,11 @@ def main():
                     if pg.mixer:
                         hit_sound.play()
                     beam.kill()
-            
+
             for arrow in arrows:
-                if pg.sprite.collide_mask(shield, arrow):
-                    arrow.kill()
-            if len(pg.sprite.spritecollide(no_move, arrows, True)) != 0:
-                hp_bar_green.width -= 2
-                hit_sound = load_sound("ショット命中.mp3")
-                if pg.mixer:
-                    hit_sound.play()
+                for shield in shields:
+                    if pg.sprite.collide_mask(shield, arrow):
+                        arrow.kill()
 
             flowers.update()
             flowers.draw(screen)
@@ -1266,6 +1262,7 @@ def main():
             dummy_pillars.draw(screen)
             arrows.update()
             arrows.draw(screen)
+            
 
 
         pg.display.update()

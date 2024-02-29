@@ -2,11 +2,9 @@ import math
 import random
 import time
 import sys
-from typing import Any
 import pygame as pg
 import os
 
-from pygame.sprite import AbstractGroup
 
 
 WIDTH = 800
@@ -17,13 +15,15 @@ STAGE_LEFT = 205
 STAGE_RIGHT = 590
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
+fig_dir = main_dir + "\data\\fig"
+sound_dir = main_dir + "\data\\sound"
 
 
 def load_sound(file):
     """"""
     if not pg.mixer:
         return None
-    file = os.path.join(main_dir, "data", file)
+    file = os.path.join(sound_dir, file)
     try:
         sound = pg.mixer.Sound(file)
         return sound
@@ -36,7 +36,9 @@ class Enemy(pg.sprite.Sprite):
 
     def __init__(self):
         super().__init__()
-        self.img =  pg.transform.scale(pg.image.load("ex05\data\pngwingcom_negate.png"), (250, 150))
+        self.img =  pg.transform.scale(
+            pg.image.load(fr"{fig_dir}\pngwingcom_negate.png"), 
+            (250, 150))
 
     def update(self, screen: pg.Surface):
         self.img.set_colorkey((0, 0, 0))
@@ -106,7 +108,7 @@ class player_move:
     def __init__(self, xy: tuple[float, float]):
         self.image = pg.transform.flip(  # 左右反転
             pg.transform.rotozoom( 
-                pg.image.load(f"ex05/fig/0.png"), 0, 0.02), True, False)
+                pg.image.load(fr"{fig_dir}\chara_red.png"), 0, 0.02), True, False)
         self.rect = self.image.get_rect()
         self.rect.center = xy
         self.on_the_ground = False
@@ -172,7 +174,7 @@ def attack_action(attack_bar_lis, sur: pg.Surface):
     attack_sur = pg.Surface((600, 200))
     pg.draw.rect(attack_sur, (255, 255, 255), (0, 0, 600, 200))
     pg.draw.rect(attack_sur, (0, 0, 0), (5, 5, 590, 190))
-    img = pg.transform.rotozoom(pg.image.load(f"ex05/undertale_attack.png"), 0, 0.49)
+    img = pg.transform.rotozoom(pg.image.load(fr"{fig_dir}\undertale_attack.png"), 0, 0.49)
     attack_sur.blit(img, (6, 50))
     # バーが画面端に到達したら進行方向を逆にする
     if attack_bar_lis[0] < 10 or 580 < attack_bar_lis[0]:
@@ -606,7 +608,7 @@ class Shield(pg.sprite.Sprite):
 def main():
     clock = pg.time.Clock()
     if pg.mixer:
-        music = os.path.join(main_dir, "data", "voice_50210.mp3")
+        music = os.path.join(sound_dir, "voice_50210.mp3")
         pg.mixer.music.load(music)
         pg.mixer.music.play(-1)
     emys = pg.sprite.Group()
@@ -684,13 +686,6 @@ def main():
     pressed_space = False
     jump_tmr = 0
 
-    arrow_set = (
-        (0, 100, 250), # 左
-        (90, WIDTH/2, 450), # 下
-        (180, 700, 250), # 右
-        (270, WIDTH/2, 20) #上
-    )
-
     tmr = 0
     while True:
         key_lst = pg.key.get_pressed() # 入力キーを取得
@@ -721,11 +716,11 @@ def main():
             decision = False
             enemy_hp_bar_red.locate = (250, 40, 300, 20)
             enemy_hp_bar_green.locate = (250, 40, enemy_hp, 20)
-            player.image = pg.transform.rotozoom(pg.image.load(f"ex05/fig/0.png"), 0, 0.02)
+            player.image = pg.transform.rotozoom(pg.image.load(fr"{fig_dir}\chara_red.png"), 0, 0.02)
             attack_type = random.randint(0, 5)
             # attack_type = 5
             if attack_type == 4:
-                player.image = pg.transform.rotozoom(pg.image.load(f"ex05/fig/1.png"), 0, 0.02)
+                player.image = pg.transform.rotozoom(pg.image.load(fr"{fig_dir}\chara_blue.png"), 0, 0.02)
                
             # 拡散弾幕用変数
             flowers = pg.sprite.Group()
@@ -761,7 +756,7 @@ def main():
             processed = True
     
         for event in pg.event.get():
-            if event.type == pg.QUIT:
+            if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
                 return 0
             
             if event.type == pg.KEYDOWN and event.key == pg.K_RIGHT and mode == "standard":

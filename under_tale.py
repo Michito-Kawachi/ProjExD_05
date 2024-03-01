@@ -14,21 +14,36 @@ STAGE_BOTTOM = 400
 STAGE_LEFT = 205
 STAGE_RIGHT = 590
 
-main_dir = os.path.split(os.path.abspath(__file__))[0]
+main_dir = os.path.split(sys.executable)[0]
 fig_dir = main_dir + "\data\\fig"
 sound_dir = main_dir + "\data\\sound"
 
 
-def load_sound(file):
+def find_data_file(filename):
+    if getattr(sys, "frozen", False):
+        # プログラムがexeファイルなら
+        cdir = sys._MEIPASS
+        filename = [filename]
+    else:
+        # プログラムが.pyなら
+        cdir = os.path.dirname(__file__)
+        if filename[-3:] == "png":
+            filename = ["data", "fig", filename]
+        elif filename[-3:] == "mp3":
+            filename = ["data", "sound", filename]
+    return os.path.join(cdir, *filename)
+
+
+def load_sound(filename):
     """"""
     if not pg.mixer:
         return None
-    file = os.path.join(sound_dir, file)
+    filepath = find_data_file(filename)
     try:
-        sound = pg.mixer.Sound(file)
+        sound = pg.mixer.Sound(filepath)
         return sound
     except pg.error:
-        print("Warning, unable to load, %s" % file)
+        print("Warning, unable to load, %s" % filepath)
     return None
 
 
@@ -37,8 +52,9 @@ class Enemy(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.img =  pg.transform.scale(
-            pg.image.load(fr"{fig_dir}\pngwingcom_negate.png"), 
-            (250, 150))
+            pg.image.load(
+                find_data_file("pngwingcom_negate.png")), 
+                (250, 150))
 
     def update(self, screen: pg.Surface):
         self.img.set_colorkey((0, 0, 0))
@@ -108,7 +124,7 @@ class player_move:
     def __init__(self, xy: tuple[float, float]):
         self.image = pg.transform.flip(  # 左右反転
             pg.transform.rotozoom( 
-                pg.image.load(fr"{fig_dir}\chara_red.png"), 0, 0.02), True, False)
+                pg.image.load(find_data_file("chara_red.png")), 0, 0.02), True, False)
         self.rect = self.image.get_rect()
         self.rect.center = xy
         self.on_the_ground = False
@@ -174,7 +190,7 @@ def attack_action(attack_bar_lis, sur: pg.Surface):
     attack_sur = pg.Surface((600, 200))
     pg.draw.rect(attack_sur, (255, 255, 255), (0, 0, 600, 200))
     pg.draw.rect(attack_sur, (0, 0, 0), (5, 5, 590, 190))
-    img = pg.transform.rotozoom(pg.image.load(fr"{fig_dir}\undertale_attack.png"), 0, 0.49)
+    img = pg.transform.rotozoom(pg.image.load(find_data_file("undertale_attack.png")), 0, 0.49)
     attack_sur.blit(img, (6, 50))
     # バーが画面端に到達したら進行方向を逆にする
     if attack_bar_lis[0] < 10 or 580 < attack_bar_lis[0]:
@@ -608,8 +624,7 @@ class Shield(pg.sprite.Sprite):
 def main():
     clock = pg.time.Clock()
     if pg.mixer:
-        music = os.path.join(sound_dir, "voice_50210.mp3")
-        pg.mixer.music.load(music)
+        pg.mixer.music.load(find_data_file("voice_50210.mp3"))
         pg.mixer.music.play(-1)
     emys = pg.sprite.Group()
     emys.add(Enemy())
@@ -716,11 +731,11 @@ def main():
             decision = False
             enemy_hp_bar_red.locate = (250, 40, 300, 20)
             enemy_hp_bar_green.locate = (250, 40, enemy_hp, 20)
-            player.image = pg.transform.rotozoom(pg.image.load(fr"{fig_dir}\chara_red.png"), 0, 0.02)
+            player.image = pg.transform.rotozoom(pg.image.load(find_data_file("chara_red.png")), 0, 0.02)
             attack_type = random.randint(0, 5)
             # attack_type = 5
             if attack_type == 4:
-                player.image = pg.transform.rotozoom(pg.image.load(fr"{fig_dir}\chara_blue.png"), 0, 0.02)
+                player.image = pg.transform.rotozoom(pg.image.load(find_data_file("chara_blue.png")), 0, 0.02)
                
             # 拡散弾幕用変数
             flowers = pg.sprite.Group()
